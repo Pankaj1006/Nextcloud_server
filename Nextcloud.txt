@@ -1,0 +1,137 @@
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+NEXTCLOUD SERVER CONFIGURATION
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+Prerequisites:
+~~~~~~~~~~~~~
+
+1) You have to login with ROOT USER.
+2) Add one netcork addaptor.
+3) Selinux must be in disabled condition.
+4) Server must be updated.
+
+Install PHP and httpd:
+----------------------
+
+yum -y install epel-release yum-utils
+
+yum -y install http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+
+
+#Disable default PHP 5.x enabled repository and enable one for PHP 7.3:
+
+yum-config-manager --disable remi-php54
+
+yum-config-manager --enable remi-php73
+
+
+#Then install Apache and PHP packages:
+
+yum -y install vim httpd php php-cli php-mysqlnd php-zip php-devel php-gd php-mcrypt php-mbstring php-curl php-xml php-pear php-bcmath php-json php-pdo php-pecl-apcu php-pecl-apcu-devel
+
+
+php -v
+
+
+Install and configure MariaDB / MySQL:
+---------------------------------------
+
+Add MariaDB YUM repository
+
+cat <<EOF | tee /etc/yum.repos.d/MariaDB.repo
+[mariadb]
+name = MariaDB
+baseurl = http://yum.mariadb.org/10.4/centos7-amd64
+gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
+gpgcheck=1
+EOF
+
+Clean yum cache index:
+
+yum makecache fast
+
+yum -y install MariaDB-server MariaDB-client
+
+rpm -qi MariaDB-server
+
+systemctl enable --now mariadb
+
+
+mysql_secure_installation
+
+
+#Now Log in and check MariaDB version:
+
+
+$ mysql -u root -p
+
+>CREATE DATABASE nextcloud;
+>CREATE USER 'nextclouduser'@'localhost' IDENTIFIED BY 'yourpassword';
+>GRANT ALL PRIVILEGES ON nextcloud.* TO 'nextclouduser'@'localhost' IDENTIFIED BY 'yourpassword' WITH GRANT OPTION;
+>FLUSH PRIVILEGES;
+>EXIT;
+
+
+#Download and install Nextcloud:
+--------------------------------
+
+yum -y install wget unzip
+
+
+wget https://download.nextcloud.com/server/releases/latest-20.zip
+
+unzip latest-20.zip
+
+rm -f latest-20.zip
+
+mv nextcloud/ /var/www/html/
+
+mkdir /var/www/html/nextcloud/data
+
+chown apache:apache -R /var/www/html/nextcloud
+
+
+Configure Apache VirtualHost – without SSL:
+-------------------------------------------
+
+
+vi /etc/httpd/conf.d/nextcloud.conf
+
+
+
+ServerName files.example.com
+ServerAdmin admin@example.com
+DocumentRoot /var/www/html/nextcloud
+
+   Require all granted 
+   AllowOverride All
+   Options FollowSymLinks MultiViews
+   SetEnv HOME /var/www/html/nextcloud
+   SetEnv HTTP_HOME /var/www/html/nextcloud
+
+
+(Paste the above configuration steps in nextcloud.conf file)
+
+
+systemctl enable --now httpd
+
+sudo restorecon -Rv /var/www/html
+
+
+Access Nextcloud UI and finish installation:
+--------------------------------------------
+
+Open up your web browser, point a URL to
+
+http://files.example.com OR http://--your-ip--
+
+
+and use the NextCloud admin account to log in.
+
+
+At that point you have succesfully configure Nextcloud server on your machine.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
